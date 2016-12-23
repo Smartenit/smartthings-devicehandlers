@@ -23,7 +23,7 @@
  *
  * Copyright Compacta International, Ltd 2016. All rights reserved
  ****************************************************************************/
-  
+ 
  import groovy.transform.Field
  
  @Field final ElecMeasCluster = 0x0B04

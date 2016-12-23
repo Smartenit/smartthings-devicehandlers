@@ -107,31 +107,24 @@ def getFPoint(String FPointHex){
 * Parse incoming device messages to generate events
 */
 def parse(String description) {
-	log.debug "parse... description: ${description}"
-    
+	log.debug "parse... description: ${description}"    
 	def event = zigbee.getEvent(description)
-	if ((event) && (event.name == "switch"))
-    {
+	if ((event) && (event.name == "switch")) {
         sendEvent(event)
     }
-    else 
-    {
+    else  {
         log.warn "DID NOT PARSE MESSAGE for description : $description"
         def mapDescription = zigbee.parseDescriptionAsMap(description)
 
-        if(mapDescription.cluster == "0702")
-        {
-            if(mapDescription.attrId == "0400")
-            {
+        if(mapDescription.cluster == "0702") {
+            if(mapDescription.attrId == "0400") {
                 return sendEvent(name:"power", value: getFPoint(mapDescription.value)/100.0)
             }
-            else
-            {
+            else {
                 return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/10000.0)
             }
         }
-        else if(mapDescription.clusterInt == 6)
-        {
+        else if(mapDescription.clusterInt == 6) {
             def attrName = "switch"
             def attrValue = null
 
@@ -154,20 +147,10 @@ def parse(String description) {
                 	return
                 }
             }
-
-            //sendEvent(name: attrName, value: attrValue)
-
-            def result = createEvent(name: attrName, value: attrValue)
-            return result
+            return sendEvent(name: attrName, value: attrValue)
         }
-        /*else
-        {
-            def result = zigbee.getEvent(description);
-        }*/
-
         return createEvent([:])
     }
-
 }
 
 def off() {
@@ -181,7 +164,6 @@ def on() {
 }
 
 def refresh() {
-    Integer reportIntervalMinutes = 5
     return (
     	zigbee.readAttribute(MeteringCluster, MeteringCurrentSummation, [destEndpoint:Endpoint2]) + 
     	zigbee.readAttribute(MeteringCluster, MeteringInstantDemand, [destEndpoint:Endpoint2]) + 
