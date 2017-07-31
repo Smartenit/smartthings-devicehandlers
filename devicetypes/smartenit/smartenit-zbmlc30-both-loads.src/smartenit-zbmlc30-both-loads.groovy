@@ -59,7 +59,7 @@ metadata {
 		attribute "switch2", "ENUM",["on","off"]
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0702", model: "ZBMLC30", deviceJoinName: "Smartenit Metering Dual Load Controller"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0702", model: "ZBMLC30-1", deviceJoinName: "Smartenit Metering Dual Load Controller"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0006,0702", model: "ZBMLC30-1", deviceJoinName: "Smartenit Metering Dual Load Controller"
 }
 
 	// simulator metadata
