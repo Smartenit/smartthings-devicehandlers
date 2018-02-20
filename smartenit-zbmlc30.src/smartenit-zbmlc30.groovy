@@ -4,7 +4,7 @@
  * 					
  * $Rev:            $: 1
  * $Author:         $: Dhawal Doshi
- * $Date:			$: 12/06/2016
+ * $Date:			$: 02/07/2018
  * $HeadURL:		$
  ****************************************************************************
  * This software is owned by Compacta and/or its supplier and is protected
@@ -24,7 +24,7 @@
  * Copyright Compacta International, Ltd 2016. All rights reserved
  ****************************************************************************/
  /*
- * Please Note: Currently the 2nd Load will not show under a Smart App which a limitation by ST. 
+ * Please Note: Currently the 2nd Load will not show under a Smart App which is a limitation by ST. 
  * We appreciate all feedback.
  */
 
@@ -41,6 +41,9 @@
  @Field final OffCommand = 0x0000
  @Field final OnCommand  = 0x0001
 
+ @Field final BasicCluster = 0x0000
+ @Field final ModelIdAttr = 0x0005
+ 
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Smartenit ZBMLC30 Both Loads", namespace: "smartenit", author: "Dhawal Doshi") {
@@ -58,8 +61,8 @@ metadata {
 		attribute "heartbeat", "string"
 		attribute "switch2", "ENUM",["on","off"]
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0702", model: "ZBMLC30", deviceJoinName: "Smartenit Metering Dual Load Controller"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0006,0702", model: "ZBMLC30-1", deviceJoinName: "Smartenit Metering Dual Load Controller"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0702", outClusters: "0019", model: "ZBMLC30", deviceJoinName: "Smartenit Metering Dual Load Controller"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0006,0702", outClusters: "0019", model: "ZBMLC30-1", deviceJoinName: "Smartenit Metering Dual Load Controller"
 }
 
 	// simulator metadata
@@ -123,80 +126,110 @@ def getFPoint(String FPointHex){
 * Parse incoming device messages to generate events
 */
 def parse(String description) {
+    def attrName = null
+	def attrValue = null
+
 	log.debug "parse... description: ${description}"
     
-    //sendEvent("parseCalled",description)
-	
-    //def event = zigbee.getEvent(description)
-	/*if (event) 
+    def mapDescription = zigbee.parseDescriptionAsMap(description)
+	log.debug "parse... mapDescription: ${mapDescription}"
+    
+    def event = zigbee.getEvent(description)
+    log.debug "parse... event: ${event}"
+    
+    if(mapDescription.cluster == "0702")
     {
-        sendEvent(event)
-    }
-    else 
-    {*/
-        log.warn "DID NOT PARSE MESSAGE for description : $description"
-        def mapDescription = zigbee.parseDescriptionAsMap(description)
-
-        if(mapDescription.cluster == "0702")
+        if(mapDescription.attrId == "0400")
         {
-            if(mapDescription.attrId == "0400")
-            {
-                return sendEvent(name:"power", value: getFPoint(mapDescription.value)/100.0)
-            }
-            else if(mapDescription.attrId == "0000")
-            {
-                return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/10000.0)
-            }
+            return sendEvent(name:"power", value: getFPoint(mapDescription.value)/100.0)
         }
-        else if(mapDescription.clusterInt == 6)
+        else if(mapDescription.attrId == "0000")
         {
-            def attrName = null
-            def attrValue = null
+            return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/10000.0)
+        }
+    }
+    else if(mapDescription.clusterInt == 6)
+    {
+        sendEvent(name: "parseSwitch", value: mapDescription)
 
-            sendEvent(name: "parseSwitch", value: mapDescription)
+        if(mapDescription.sourceEndpoint == "01") {
+            attrName = "switch"
+        }else if(mapDescription.sourceEndpoint == "02") {
+            attrName = "switch2"
+        }else{
+            return
+        }
 
-            if(mapDescription.sourceEndpoint == "01") {
-                attrName = "switch"
-            }else if(mapDescription.sourceEndpoint == "02") {
-                attrName = "switch2"
+        if(mapDescription.command == "0B") {
+            if(mapDescription.data[0] == "00") { 
+                attrValue = "off"
+            }else if(mapDescription.data[0] == "01") {
+                attrValue = "on"
             }else{
                 return
             }
-
-			if(mapDescription.command == "0B") {
-                if(mapDescription.data[0] == "00") {
-                    attrValue = "off"
-                }else if(mapDescription.data[0] == "01") {
-                    attrValue = "on"
-                }else{
-                	return
-                }
-            }else {
-                if(mapDescription.value == "00") {
-                    attrValue = "off"
-                }else if(mapDescription.value == "01") {
-                    attrValue = "on"
-                }else{
-                	return
-                }
+        }else {
+            if(mapDescription.value == "00") {
+                attrValue = "off"
+            }else if(mapDescription.value == "01") {
+                attrValue = "on"
+            }else{
+                return
             }
-
-            sendEvent(name: attrName, value: attrValue)
-
-            def result = createEvent(name: attrName, value: attrValue)
-            return result
-            //return createEvent(name: name, value: value, descriptionText: "$device.displayName $name is $value", isStateChange: true)
-            //def result = createEvent(name: "Load", value: "pushed", data: [buttonNumber: name], descriptionText: "$device.displayName button $name was pushed", isStateChange: true)
-
         }
-        else
+
+        sendEvent(name: attrName, value: attrValue)
+
+        def result = createEvent(name: attrName, value: attrValue)
+        return result
+    }
+    else if(mapDescription.clusterInt == 0)
+    {
+        sendEvent(name: "parseBasic", value: mapDescription)
+        if(mapDescription.attrId == "0005")
         {
-            def result = zigbee.getEvent(description);
+            attrName = "ModelId"
+            attrValue = mapDescription.value.toString()
+            log.debug "ModelName attrValue: ${attrValue}"
+            state.ModelName = mapDescription.value
+            log.debug "ModelName attr received: ${state.ModelName}"
+            if (state.ModelName == "5A424D4C4333302D31") 
+            {
+                state.MeteringEP = 0x01
+            }
         }
+        sendEvent(name: attrName, value: attrValue)
 
-        return createEvent([:])
-    //}
+        def result = createEvent(name: attrName, value: attrValue)
+        return result
+    }
+    else if(mapDescription.clusterInt == 8)
+    {
+		log.debug "parsing level control..value: ${mapDescription.value}"
+        if(mapDescription.value == "00") {
+            attrValue = "off"
+            sendEvent(name: "switch", value: attrValue)
+            sendEvent(name: "switch2", value: attrValue)
+        }else if(mapDescription.value == "80") {
+            sendEvent(name: "switch", value: "off")
+            sendEvent(name: "switch2", value: "on")
+        }else if(mapDescription.value == "ff") {
+            sendEvent(name: "switch", value: "on")
+            sendEvent(name: "switch2", value: "off")
+        }else{
+            return
+        }
+    }
+    else
+    {
+    	if(description.contains("on/off")) {
+        	log.debug "must be a report, but don't know which Endpoint"
+        }else {
+        	log.warn "Did not parse message: $description"
+        }
+    }
 
+    return createEvent([:])
 }
 
 def off() {
@@ -226,23 +259,41 @@ def offRelay2(){
 }
 
 def refresh() {
+	log.debug "Device Model: ${state.ModelName}"
+    def configCmds = []
+    if(state.MeterBound == 0) {
+    	state.MeterBound = 1
+        configCmds = [ "zdo bind 0x${device.deviceNetworkId} ${state.MeteringEP} 0x01 ${MeteringCluster} {${device.zigbeeId}} {}" ]
+	}
+
 	sendEvent(name: "heartbeat", value: "alive", displayed:false)
+    
     return (
     	zigbee.onOffRefresh() + 
-        //zigbee.onOffConfig() +
-    	zigbee.readAttribute(OnOffCluster, OnOffAttr, [destEndpoint:Endpoint2]) +
-    	zigbee.readAttribute(MeteringCluster, MeteringCurrentSummation, [destEndpoint:Endpoint2]) +
-    	zigbee.readAttribute(MeteringCluster, MeteringInstantDemand, [destEndpoint:Endpoint2])
+        zigbee.readAttribute(OnOffCluster, OnOffAttr, [destEndpoint:Endpoint2]) +
+    	zigbee.readAttribute(MeteringCluster, MeteringCurrentSummation, [destEndpoint:state.MeteringEP]) +
+    	zigbee.readAttribute(MeteringCluster, MeteringInstantDemand, [destEndpoint:state.MeteringEP]) +
+		configCmds
     )
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
     
-	def configCmds = [
-        "zdo bind 0x${device.deviceNetworkId} ${Endpoint2} 0x01 ${MeteringCluster} {${device.zigbeeId}} {}",
-        "zdo bind 0x${device.deviceNetworkId} ${Endpoint2} 0x01 ${OnOffCluster} {${device.zigbeeId}} {}"
-        ]
-    return  configCmds + zigbee.onOffConfig()
-}
+	runEvery15Minutes(refresh)
 
+	state.ModelName = ""
+    state.MeteringEP = 0x02
+    state.MeterBound = 0
+    
+    def retrieveModel = [
+    	zigbee.readAttribute(BasicCluster, ModelIdAttr)
+    ]
+    
+	def configCmds = [
+        //"zdo bind 0x${device.deviceNetworkId} ${state.MeteringEP} 0x01 ${MeteringCluster} {${device.zigbeeId}} {}",
+        "zdo bind 0x${device.deviceNetworkId} ${Endpoint2} 0x01 ${OnOffCluster} {${device.zigbeeId}} {}"
+    ]
+
+	return  retrieveModel + configCmds + zigbee.onOffConfig()
+}
