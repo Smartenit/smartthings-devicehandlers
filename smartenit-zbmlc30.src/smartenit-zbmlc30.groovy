@@ -1,11 +1,7 @@
 /****************************************************************************
  * DRIVER NAME:		Smartenit Metering Dual Load Controller
  * DESCRIPTION:		Device handler for Smartenit Metering Dual Load Controller (#4040B)
- * 					
- * $Rev:            $: 1
  * $Author:         $: Dhawal Doshi
- * $Date:			$: 02/07/2018
- * $HeadURL:		$
  ****************************************************************************
  * This software is owned by Compacta and/or its supplier and is protected
  * under applicable copyright laws. All rights are reserved. We grant You,
@@ -23,11 +19,7 @@
  *
  * Copyright Compacta International, Ltd 2016. All rights reserved
  ****************************************************************************/
- /*
- * Please Note: Currently the 2nd Load will not show under a Smart App which is a limitation by ST. 
- * We appreciate all feedback.
- */
-
+ 
  import groovy.transform.Field
 
  @Field final Endpoint2 = 0x02
