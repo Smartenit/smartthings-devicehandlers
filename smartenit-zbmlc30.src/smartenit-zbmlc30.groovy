@@ -1,7 +1,9 @@
 /****************************************************************************
- * DRIVER NAME:		Smartenit Metering Dual Load Controller
- * DESCRIPTION:		Device handler for Smartenit Metering Dual Load Controller (#4040B)
- * $Author:         $: Dhawal Doshi
+ * DRIVER NAME:	Smartenit Metering Dual Load Controller
+ * DESCRIPTION:	Device handler for Smartenit Metering Dual Load Controller (#4040B)
+ * Author:     Dhawal Doshi
+ * Revision:   2
+ * Date:       02/21/2018
  ****************************************************************************
  * This software is owned by Compacta and/or its supplier and is protected
  * under applicable copyright laws. All rights are reserved. We grant You,
@@ -38,7 +40,7 @@
  
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Smartenit ZBMLC30 Both Loads", namespace: "smartenit", author: "Dhawal Doshi") {
+	definition (name: "Smartenit ZBMLC30", namespace: "smartenit", author: "Dhawal Doshi") {
 		capability "Switch"
 		capability "Power Meter"
 		capability "Configuration"
