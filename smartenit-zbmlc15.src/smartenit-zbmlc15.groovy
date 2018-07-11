@@ -25,16 +25,22 @@
 
  import groovy.transform.Field
 
+ @Field final OnoffCluster = 0x0006
  @Field final MeteringEP = 0x0A
  @Field final MeteringCluster = 0x0702
+ @Field final MeteringSummationAttrID = 0x25
+ @Field final MeteringDemandAttrID = 0x2A
  @Field final MeteringInstantDemand = 0x0400
  @Field final MeteringCurrentSummation = 0x0000
- @Field final PowerDivisor = 100
- @Field final EnergyDivisor = 10000
+ @Field final MeteringDivisor = 1000
+ @Field final MaxReportTimeSecs = 600
+ @Field final MeteringReportableChange = 25	//25 watt-hour and 25 watts
+ @Field final ReportIntervalsecs = 300	// 5 mins
+ @Field final HealthCheckSecs = 600	// 5 mins
  
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Smartenit ZBMPlug15", namespace: "smartenit", author: "Smartenit") {
+	definition (name: "Smartenit ZBMLC15", namespace: "smartenit", author: "Smartenit") {
 		capability "Switch"
 		capability "Power Meter"
 		capability "Configuration"
@@ -106,7 +112,7 @@ def getFPoint(String FPointHex){
 * Parse incoming device messages to generate events
 */
 def parse(String description) {
-	log.debug "parse... description: ${description}"    
+	//log.debug "parse... description: ${description}"    
 	def event = zigbee.getEvent(description)
 	if ((event) && (event.name == "switch")) {
         sendEvent(event)
@@ -115,20 +121,18 @@ def parse(String description) {
         log.warn "DID NOT PARSE MESSAGE for description : $description"
         def mapDescription = zigbee.parseDescriptionAsMap(description)
 
-        if(mapDescription.cluster == "0702") {
+        if(mapDescription.clusterInt == MeteringCluster) {
             if(mapDescription.attrId == "0400") {
-                return sendEvent(name:"power", value: getFPoint(mapDescription.value)/100.0)
+                return sendEvent(name:"power", value: getFPoint(mapDescription.value)/MeteringEP)
             }
             else {
-                return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/10000.0)
+                return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/MeteringEP)
             }
         }
-        else if(mapDescription.clusterInt == 6) {
+        else if(mapDescription.clusterInt == OnoffCluster) {
             def attrName = "switch"
             def attrValue = null
-
             //sendEvent(name: "parseSwitch", value: mapDescription)
-
 			if(mapDescription.command == "0B") {
                 if(mapDescription.data[0] == "00") {
                     attrValue = "off"
@@ -172,21 +176,19 @@ def refresh() {
 
 def configure() {
 	//log.debug "in configure()"
-    Integer reportIntervalMinutes = 5
-	def configCmds = ["zdo bind 0x${device.deviceNetworkId} 0x02 0x01 0x0702 {${device.zigbeeId}} {}"]
+	def configCmds = ["zdo bind 0x${device.deviceNetworkId} MeteringEP 0x01 MeteringCluster {${device.zigbeeId}} {}"]
     return  (
     	configCmds + 
-    	zigbee.configureReporting(MeteringCluster, MeteringCurrentSummation, 0x25, 0, 600, 50, [destEndpoint:MeteringEP]) + 
-    	zigbee.configureReporting(MeteringCluster, MeteringInstantDemand, 0x2A, 0, 600, 10, [destEndpoint:MeteringEP]) +
-    	zigbee.onOffConfig(0,reportIntervalMinutes * 60) + 
+    	zigbee.configureReporting(MeteringCluster, MeteringCurrentSummation, MeteringSummationAttrID, 0, MaxReportTimeSecs, MeteringReportableChange, [destEndpoint:MeteringEP]) + 
+    	zigbee.configureReporting(MeteringCluster, MeteringInstantDemand, MeteringDemandAttrID, 0, MaxReportTimeSecs, MeteringReportableChange, [destEndpoint:MeteringEP]) +
+    	zigbee.onOffConfig(0,ReportIntervalsecs) + 
     	zigbee.onOffRefresh() + 
     	configureHealthCheck()
     	)
 }
 
 def configureHealthCheck() {
-    Integer hcIntervalMinutes = 12
-    sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: HealthCheckSecs, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     return refresh()
 }
 
