@@ -2,8 +2,8 @@
  * DRIVER NAME:	Smartenit Metering Dual Load Controller
  * DESCRIPTION:	Device handler for Smartenit Metering Dual Load Controller (#4040B)
  * Author:     Dhawal Doshi
- * Revision:   2
- * Date:       02/21/2018
+ * Revision:   3
+ * Date:       07/12/2018
  ****************************************************************************
  * This software is owned by Compacta and/or its supplier and is protected
  * under applicable copyright laws. All rights are reserved. We grant You,
@@ -253,21 +253,25 @@ def offRelay2(){
 }
 
 def refresh() {
-	log.debug "Device Model: ${state.ModelName}"
+	if( (state.MeteringEP == null) || (state.ModelName == null) || (state.MeterBound == null)) {
+    	log.warn "Device not configured, configuring now.."
+        return configure()
+    }
+
     def configCmds = []
     if(state.MeterBound == 0) {
-    	state.MeterBound = 1
+        state.MeterBound = 1
         configCmds = [ "zdo bind 0x${device.deviceNetworkId} ${state.MeteringEP} 0x01 ${MeteringCluster} {${device.zigbeeId}} {}" ]
-	}
+    }
 
-	sendEvent(name: "heartbeat", value: "alive", displayed:false)
-    
+    sendEvent(name: "heartbeat", value: "alive", displayed:false)
+
     return (
-    	zigbee.onOffRefresh() + 
+        zigbee.onOffRefresh() + 
         zigbee.readAttribute(OnOffCluster, OnOffAttr, [destEndpoint:Endpoint2]) +
-    	zigbee.readAttribute(MeteringCluster, MeteringCurrentSummation, [destEndpoint:state.MeteringEP]) +
-    	zigbee.readAttribute(MeteringCluster, MeteringInstantDemand, [destEndpoint:state.MeteringEP]) +
-		configCmds
+        zigbee.readAttribute(MeteringCluster, MeteringCurrentSummation, [destEndpoint:state.MeteringEP]) +
+        zigbee.readAttribute(MeteringCluster, MeteringInstantDemand, [destEndpoint:state.MeteringEP]) +
+        configCmds
     )
 }
 
