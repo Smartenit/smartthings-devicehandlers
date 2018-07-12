@@ -2,9 +2,9 @@
  * DRIVER NAME:  Smartenit ZBMLC15
  * DESCRIPTION:	 Device handler for Smartenit Metering Single Load Controller (#4034A)
  * 				 https://smartenit.com/product/zbmlc15/
- * $Rev:         $: 1
+ * $Rev:         $: 2
  * $Author:      $: Dhawal Doshi
- * $Date:	 	 $: 07/10/2018
+ * $Date:	 	 $: 07/12/2018
  ****************************************************************************
  * This software is owned by Compacta and/or its supplier and is protected
  * under applicable copyright laws. All rights are reserved. We grant You,
@@ -118,15 +118,19 @@ def parse(String description) {
         sendEvent(event)
     }
     else  {
-        log.warn "DID NOT PARSE MESSAGE for description : $description"
         def mapDescription = zigbee.parseDescriptionAsMap(description)
 
         if(mapDescription.clusterInt == MeteringCluster) {
             if(mapDescription.attrId == "0400") {
-                return sendEvent(name:"power", value: getFPoint(mapDescription.value)/MeteringEP)
+            	log.debug "Received Power value: ${mapDescription.value}"
+                return sendEvent(name:"power", value: getFPoint(mapDescription.value))
+            }
+            else if(mapDescription.attrId == "0000") {
+            	log.debug "Received Energy value: ${mapDescription.value}"
+                return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/MeteringDivisor)
             }
             else {
-                return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/MeteringEP)
+            	log.warn "Unnknown attribute: ${mapDescription.attrId}"
             }
         }
         else if(mapDescription.clusterInt == OnoffCluster) {
@@ -175,7 +179,7 @@ def refresh() {
 }
 
 def configure() {
-	//log.debug "in configure()"
+	log.debug "in configure()"
 	def configCmds = ["zdo bind 0x${device.deviceNetworkId} MeteringEP 0x01 MeteringCluster {${device.zigbeeId}} {}"]
     return  (
     	configCmds + 
