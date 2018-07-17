@@ -2,9 +2,9 @@
  * DRIVER NAME:  Smartenit ZBMLC15
  * DESCRIPTION:	 Device handler for Smartenit Metering Single Load Controller (#4034A)
  * 				 https://smartenit.com/product/zbmlc15/
- * $Rev:         $: 2
+ * $Rev:         $: 3
  * $Author:      $: Dhawal Doshi
- * $Date:	 	 $: 07/12/2018
+ * $Date:	 	 $: 07/13/2018
  ****************************************************************************
  * This software is owned by Compacta and/or its supplier and is protected
  * under applicable copyright laws. All rights are reserved. We grant You,
@@ -26,15 +26,21 @@
  import groovy.transform.Field
 
  @Field final OnoffCluster = 0x0006
+ 
  @Field final MeteringEP = 0x0A
  @Field final MeteringCluster = 0x0702
- @Field final MeteringSummationAttrID = 0x25
- @Field final MeteringDemandAttrID = 0x2A
- @Field final MeteringInstantDemand = 0x0400
- @Field final MeteringCurrentSummation = 0x0000
+ @Field final MetSummDataType = 0x25
+ @Field final MetDemandDataType = 0x2A
+ @Field final MeteringDemandAttrID = 0x0400
+ @Field final MeteringSummAttrID = 0x0000
  @Field final MeteringDivisor = 1000
- @Field final MaxReportTimeSecs = 600
- @Field final MeteringReportableChange = 25	//25 watt-hour and 25 watts
+
+ @Field final SumMaxReportTimeSecs = 0
+ @Field final SumMinReportTimeSecs = 0
+ @Field final DemMaxReportTimeSecs = 0
+ @Field final DemMinReportTimeSecs = 0
+ @Field final MeteringReportableChange = 1	//watt-hour and watts
+
  @Field final ReportIntervalsecs = 300	// 5 mins
  @Field final HealthCheckSecs = 600	// 5 mins
  
@@ -119,18 +125,28 @@ def parse(String description) {
     }
     else  {
         def mapDescription = zigbee.parseDescriptionAsMap(description)
-
+		// log.debug "parse... mapDescription: ${mapDescription}"
         if(mapDescription.clusterInt == MeteringCluster) {
+        	
             if(mapDescription.attrId == "0400") {
             	log.debug "Received Power value: ${mapDescription.value}"
-                return sendEvent(name:"power", value: getFPoint(mapDescription.value))
+                sendEvent(name:"power", value: getFPoint(mapDescription.value))
             }
             else if(mapDescription.attrId == "0000") {
             	log.debug "Received Energy value: ${mapDescription.value}"
-                return sendEvent(name:"energy", value: getFPoint(mapDescription.value)/MeteringDivisor)
+                sendEvent(name:"energy", value: getFPoint(mapDescription.value)/MeteringDivisor)
             }
-            else {
-            	log.warn "Unnknown attribute: ${mapDescription.attrId}"
+            
+            if (mapDescription.additionalAttrs) {
+            	log.debug "Additional attrs found"
+                if(mapDescription.additionalAttrs[0].attrId == "0400") {
+            		log.debug "Received Power value: ${mapDescription.additionalAttrs[0].value}"
+                	sendEvent(name:"power", value: getFPoint(mapDescription.additionalAttrs[0].value))
+            	}
+            	else if(mapDescription.additionalAttrs[0].attrId == "0000") {
+            		log.debug "Received Energy value: ${mapDescription.additionalAttrs[0].value}"
+                	sendEvent(name:"energy", value: getFPoint(mapDescription.additionalAttrs[0].value)/MeteringDivisor)
+           	 	}
             }
         }
         else if(mapDescription.clusterInt == OnoffCluster) {
@@ -171,23 +187,31 @@ def on() {
 }
 
 def refresh() {
+	if (state.configured != 1) {
+    	return configure()
+	}
+    
     return (
-    	zigbee.readAttribute(MeteringCluster, MeteringCurrentSummation, [destEndpoint:MeteringEP]) + 
-    	zigbee.readAttribute(MeteringCluster, MeteringInstantDemand, [destEndpoint:MeteringEP]) + 
+    	zigbee.readAttribute(MeteringCluster, MeteringSummAttrID, [destEndpoint:MeteringEP]) + 
+    	zigbee.readAttribute(MeteringCluster, MeteringDemandAttrID, [destEndpoint:MeteringEP]) + 
     	zigbee.onOffRefresh() 
     )
 }
 
 def configure() {
 	log.debug "in configure()"
-	def configCmds = ["zdo bind 0x${device.deviceNetworkId} MeteringEP 0x01 MeteringCluster {${device.zigbeeId}} {}"]
+    state.configured = 1
+    
+    //configureHealthCheck()
+    
+	def meterconfigCmds = ["zdo bind 0x${device.deviceNetworkId} MeteringEP 0x01 MeteringCluster {${device.zigbeeId}} {}"]
+    def onoffconfigCmds = ["zdo bind 0x${device.deviceNetworkId} MeteringEP 0x01 OnoffCluster {${device.zigbeeId}} {}"]
     return  (
-    	configCmds + 
-    	zigbee.configureReporting(MeteringCluster, MeteringCurrentSummation, MeteringSummationAttrID, 0, MaxReportTimeSecs, MeteringReportableChange, [destEndpoint:MeteringEP]) + 
-    	zigbee.configureReporting(MeteringCluster, MeteringInstantDemand, MeteringDemandAttrID, 0, MaxReportTimeSecs, MeteringReportableChange, [destEndpoint:MeteringEP]) +
-    	zigbee.onOffConfig(0,ReportIntervalsecs) + 
-    	zigbee.onOffRefresh() + 
-    	configureHealthCheck()
+    	meterconfigCmds + 
+        onoffconfigCmds +
+    	zigbee.configureReporting(MeteringCluster, MeteringSummAttrID, MetSummDataType, SumMinReportTimeSecs, SumMaxReportTimeSecs, MeteringReportableChange, [destEndpoint:MeteringEP]) + 
+    	zigbee.configureReporting(MeteringCluster, MeteringDemandAttrID, MetDemandDataType, DemMinReportTimeSecs, DemMaxReportTimeSecs, MeteringReportableChange, [destEndpoint:MeteringEP]) +
+        zigbee.configureReporting(OnoffCluster, 0x0000, 0x10, 0, 0, 0x01, [destEndpoint:MeteringEP])
     	)
 }
 
