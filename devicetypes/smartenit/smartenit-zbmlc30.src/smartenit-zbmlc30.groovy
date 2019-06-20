@@ -83,15 +83,15 @@ metadata {
 	tiles(scale: 1) {
         standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
             state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
-            state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "turningOff"
-            state "turningOn", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "turningOff"
+            state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc", nextState: "turningOff"
+            state "turningOn", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc", nextState: "turningOff"
             state "turningOff", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
         }
 
         standardTile("switch2", "device.switch2", width: 1, height: 1, canChangeIcon: true) {
             state "off", label: '${name}', action: "onRelay2", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
-            state "on", label: '${name}', action: "offRelay2", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "turningOff"
-            state "turningOn", label: '${name}', action: "offRelay2", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "turningOff"
+            state "on", label: '${name}', action: "offRelay2", icon: "st.switches.switch.on", backgroundColor: "#00a0dc", nextState: "turningOff"
+            state "turningOn", label: '${name}', action: "offRelay2", icon: "st.switches.switch.on", backgroundColor: "#00a0dc", nextState: "turningOff"
             state "turningOff", label: '${name}', action: "onRelay2", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
         }
         

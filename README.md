@@ -4,10 +4,10 @@
 2. Click on "My Device Handlers"
 3. Click on "Create New Device Handler"
 4. Click on "From Code" and then you will see a big text box to paste the device handler code.
-5. Open a different tab and navigate to https://github.com/Smartenit/smartthings-devicehandlers
-    1. Shortcut for ZBMPlug15 - https://raw.githubusercontent.com/Smartenit/smartthings-devicehandlers/master/smartenit-zbmplug15.src/smartenit-zbmplug15.groovy
-    2. Shortcut for ZBMLC30 - https://raw.githubusercontent.com/Smartenit/smartthings-devicehandlers/master/smartenit-zbmlc30.src/smartenit-zbmlc30.groovy
-    3. Shortcut for ZBMSKT - https://raw.githubusercontent.com/Smartenit/smartthings-devicehandlers/master/smartenit-zbmskt.src/smartenit-zbmskt.groovy
+5. Open a different tab and navigate to https://github.com/Smartenit/smartthings-devicehandlers/tree/master/devicetypes/smartenit
+    1. Shortcut for ZBMPlug15 - https://raw.githubusercontent.com/Smartenit/smartthings-devicehandlers/master/devicetypes/smartenit/smartenit-zblc15.src/smartenit-zblc15.groovy
+    2. Shortcut for ZBMLC30 - https://raw.githubusercontent.com/Smartenit/smartthings-devicehandlers/master/devicetypes/smartenit/smartenit-zbmlc30.src/smartenit-zbmlc30.groovy
+    3. Shortcut for ZBMSKT - https://raw.githubusercontent.com/Smartenit/smartthings-devicehandlers/master/devicetypes/smartenit/smartenit-zbmskt.src/smartenit-zbmskt.groovy
     4. Longcut - Click on the desired device directory and you will see a groovy file. Click to open that file. You will see all the device handler code. Click on "Raw" button to see the code properly.  Copy this code exactly the way it is.
 6. Paste the code from previous step in the SmartThings Text box, then click Create at the bottom of the page. The device handler will get created and you will see few options on top right.
 7. Click "Save", click "Publish", and then click "For Me".  It should say "Device type published successfully."
